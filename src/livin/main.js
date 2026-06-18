@@ -254,7 +254,7 @@ function renderShell() {
       <aside class="sidebar">
         <div class="brand-section">
           <div class="brand-logo">KGB</div>
-          <div><div class="brand-title">KGB Treats</div><div class="brand-subtitle">CIF Growth Dashboard</div></div>
+          <div><div class="brand-title">RADAR KGB</div><div class="brand-subtitle">Command Center</div></div>
         </div>
         <nav class="nav-menu">
           <button class="nav-item ${state.tab==='summary'?'active':''}" data-tab="summary">${icon('cif')} Executive Summary</button>
@@ -263,24 +263,23 @@ function renderShell() {
           <button class="nav-item ${state.tab==='mapping'?'active':''}" data-tab="mapping">${icon('map')} Merchant Mapping</button>
         </nav>
         <div class="sidebar-footer">
-          <strong>Program Logic</strong>
-          Promo merchant hanya diberikan setelah pelanggan membuka rekening Mandiri dan melakukan transaksi via Livin’. Merchant mengumpulkan bukti, cabang memvalidasi.
+          <div class="user-profile">
+            <div class="user-avatar">AD</div>
+            <div class="user-info">
+              <span class="user-name">Admin</span>
+              <span class="user-role">RADAR KGB Operator</span>
+            </div>
+          </div>
         </div>
       </aside>
       <main class="workspace">
         <header class="topbar">
           <div>
-            <div class="eyebrow">Cabang Kelapa Gading Bolevar</div>
-            <h1>KGB Livin’ Treats x Merchant Radar</h1>
-            <p>Dashboard untuk mengolah data merchant existing dan data bukti dari Google Form merchant, lalu memvisualisasikan performa campaign, validasi bukti, dan mapping merchant partner.</p>
-            <div class="file-meta">
-              <span>Merchant: <b>${safe(state.uploadedMerchantName)}</b></span>
-              <span>Bukti/Form: <b>${safe(state.uploadedClaimName)}</b></span>
-            </div>
+            <h1>Treatrix</h1>
           </div>
           <div class="top-actions">
             ${state.tab === 'summary' ? `<button class="btn yellow" id="unifiedUploadBtn">Upload Data Program</button>` : ``}
-            <button class="btn ghost" id="backToRadarBtn">KGB-RADAR</button>
+            <button class="btn ghost" id="backToRadarBtn">Mercator</button>
           </div>
           <input id="merchantFile" class="hidden-input" type="file" accept=".csv,.xlsx,.xls,.json" />
           <input id="claimsFile" class="hidden-input" type="file" accept=".csv,.xlsx,.xls,.json" />
