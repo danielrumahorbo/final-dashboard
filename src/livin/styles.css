@@ -34,3 +34,48 @@
   color: var(--text-secondary);
   white-space: nowrap;
 }
+
+/* Treatrix sidebar brand: match Mercator RADAR KGB Command Center logo */
+.brand-section .brand-logo {
+  position: relative;
+  flex: 0 0 44px;
+  color: #071020;
+}
+.brand-section .logo-icon {
+  position: relative;
+  z-index: 2;
+  width: 22px;
+  height: 22px;
+  color: #071020;
+}
+.brand-section .radar-pulse {
+  position: absolute;
+  inset: -4px;
+  border-radius: 16px;
+  border: 1px solid var(--mandiri-gold);
+  opacity: 0;
+  animation: logoPulse 2s infinite ease-out;
+  z-index: 1;
+  pointer-events: none;
+}
+.brand-section .brand-info {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.brand-section .brand-title {
+  white-space: nowrap;
+  font-size: 18px;
+  line-height: 1.1;
+  font-weight: 900;
+  letter-spacing: -0.2px;
+  color: var(--text-primary);
+}
+.brand-section .brand-subtitle {
+  white-space: nowrap;
+  line-height: 1.35;
+}
+@keyframes logoPulse {
+  0% { transform: scale(0.9); opacity: 0.8; }
+  100% { transform: scale(1.3); opacity: 0; }
+}
