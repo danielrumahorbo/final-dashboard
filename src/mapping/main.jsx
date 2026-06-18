@@ -1214,7 +1214,7 @@ function App() {
       </main>
 
       {showImport && <ImportModal onClose={() => setShowImport(false)} onRead={readExcelFile} summary={importSummary} onPublish={publishImport} pendingCount={pendingRows.length} lvmCount={pendingLvmRows.length} />}
-      {activeTab === 'radar' && showVisit && hasManualSelection && selected && <VisitModal merchant={selected} onClose={() => setShowVisit(false)} onSave={saveVisit} />}
+      {showVisit && hasManualSelection && selected && <VisitModal merchant={selected} onClose={() => setShowVisit(false)} onSave={saveVisit} />}
     </div>
   );
 }
