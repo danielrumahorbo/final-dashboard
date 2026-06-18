@@ -898,7 +898,7 @@ function App() {
                     </button>
                   </div>
                 </div>
-                <RadarMap merchants={radarFiltered} selected={hasManualSelection ? selected : null} onSelect={handleMerchantSelect} />
+                <RadarMap merchants={radarFiltered} selected={selected?.isManualVisit ? null : selected} onSelect={handleMerchantSelect} />
                 <div className="insight-strip">
                   <Insight title="Area Focus" text={`${radarFiltered.filter((m) => m.priorityScore >= 80).length} high-priority merchant aktif di filter peta.`} />
                   <Insight title="Visit Gap" text={`${radarFiltered.filter((m) => m.visitStatus === 'Belum Dikunjungi').length} merchant belum memiliki catatan visit pada filter ini.`} />
@@ -908,9 +908,9 @@ function App() {
 
               <aside className="right-panel">
                 <MerchantDetailPanel
-                  merchant={hasManualSelection ? selected : null}
+                  merchant={selected?.isManualVisit ? null : selected}
                   onVisit={() => setShowVisit(true)}
-                  visits={hasManualSelection && selected ? (Array.isArray(visits) ? visits.filter((v) => String(v.merchant_id) === String(selected.id)) : []) : []}
+                  visits={selected && !selected.isManualVisit ? (Array.isArray(visits) ? visits.filter((v) => String(v.merchant_id) === String(selected.id)) : []) : []}
                 />
               </aside>
             </section>
@@ -1214,7 +1214,17 @@ function App() {
       </main>
 
       {showImport && <ImportModal onClose={() => setShowImport(false)} onRead={readExcelFile} summary={importSummary} onPublish={publishImport} pendingCount={pendingRows.length} lvmCount={pendingLvmRows.length} />}
-      {showVisit && hasManualSelection && selected && <VisitModal merchant={selected} onClose={() => setShowVisit(false)} onSave={saveVisit} />}
+      {showVisit && hasManualSelection && selected && <VisitModal
+        merchant={selected}
+        onClose={() => {
+          setShowVisit(false);
+          if (selected?.isManualVisit) {
+            setSelected(null);
+            setHasManualSelection(false);
+          }
+        }}
+        onSave={saveVisit}
+      />}
     </div>
   );
 }
