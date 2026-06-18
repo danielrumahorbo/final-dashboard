@@ -243,6 +243,17 @@ function icon(name) {
   };
   return icons[name] || '•';
 }
+
+function navSvg(name) {
+  const common = 'class="nav-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"';
+  const icons = {
+    summary: `<svg ${common}><path d="M9 11l3 3L22 4"></path><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path></svg>`,
+    merchants: `<svg ${common}><circle cx="12" cy="12" r="10"></circle><circle cx="12" cy="12" r="6"></circle><circle cx="12" cy="12" r="2"></circle></svg>`,
+    claims: `<svg ${common}><rect x="4" y="3" width="16" height="18" rx="2"></rect><path d="M9 7h6"></path><path d="M9 12h6"></path><path d="M9 17h4"></path></svg>`,
+    mapping: `<svg ${common}><path d="M20 10c0 6-8 12-8 12S4 16 4 10a8 8 0 1 1 16 0Z"></path><circle cx="12" cy="10" r="3"></circle></svg>`
+  };
+  return icons[name] || icons.summary;
+}
 function badge(status) {
   const cls = status === 'Winner' ? 'green' : status === 'Watch' ? 'orange' : status === 'Drop' ? 'red' : status === 'Valid' ? 'green' : status === 'Redeem' ? 'blue' : status === 'Siap Klaim' ? 'gold' : status === 'Proses Validasi' ? 'orange' : 'gray';
   return `<span class="badge ${cls}">${safe(status)}</span>`;
@@ -263,10 +274,10 @@ function renderShell() {
           <div class="brand-info"><div class="brand-title">RADAR KGB</div><div class="brand-subtitle">Command Center</div></div>
         </div>
         <nav class="nav-menu">
-          <button class="nav-item ${state.tab==='summary'?'active':''}" data-tab="summary">${icon('cif')} Executive Summary</button>
-          <button class="nav-item ${state.tab==='merchants'?'active':''}" data-tab="merchants">${icon('merchant')} Merchant Partner</button>
-          <button class="nav-item ${state.tab==='claims'?'active':''}" data-tab="claims">${icon('proof')} Validasi Bukti</button>
-          <button class="nav-item ${state.tab==='mapping'?'active':''}" data-tab="mapping">${icon('map')} Merchant Mapping</button>
+          <button class="nav-item ${state.tab==='summary'?'active':''}" data-tab="summary">${navSvg('summary')}<span class="nav-label">Executive Summary</span></button>
+          <button class="nav-item ${state.tab==='merchants'?'active':''}" data-tab="merchants">${navSvg('merchants')}<span class="nav-label">Merchant Partner</span></button>
+          <button class="nav-item ${state.tab==='claims'?'active':''}" data-tab="claims">${navSvg('claims')}<span class="nav-label">Validasi Bukti</span></button>
+          <button class="nav-item ${state.tab==='mapping'?'active':''}" data-tab="mapping">${navSvg('mapping')}<span class="nav-label">Merchant Mapping</span></button>
         </nav>
         <div class="sidebar-footer">
           <div class="user-profile">
