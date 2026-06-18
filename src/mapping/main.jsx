@@ -434,7 +434,7 @@ function App() {
   }, []);
 
   useEffect(() => {
-    if (activeTab !== 'radar') {
+    if (!['radar', 'visits'].includes(activeTab)) {
       clearMerchantSelection();
       setShowVisit(false);
     }
@@ -601,11 +601,42 @@ function App() {
     setShowImport(false);
   }
 
+  function openManualVisit() {
+    setSelected({
+      id: `manual-${Date.now()}`,
+      merchantName: '',
+      category: 'Manual Visit',
+      address: '',
+      areaName: 'Kelapa Gading Bolevar',
+      priorityScore: 0,
+      visitStatus: 'Manual Visit',
+      pipelineStatus: 'Visited',
+      lvmStatus: 'Non-LVM',
+      qrProvider: '',
+      edcProvider: '',
+      competitorBank: '',
+      notes: '',
+      isManualVisit: true
+    });
+    setHasManualSelection(true);
+    setShowVisit(true);
+  }
+
   async function saveVisit(form) {
     const m = selected;
     if (!m) return;
+    const isManual = Boolean(m.isManualVisit);
+    const manualName = cleanText(form.manualMerchantName || m.merchantName || 'Merchant Manual');
+    const manualAddress = cleanText(form.manualAddress || m.address || '');
+    const manualCategory = cleanText(form.manualCategory || m.category || 'Manual Visit');
+    const manualArea = cleanText(form.manualAreaName || m.areaName || 'Kelapa Gading Bolevar');
     const visitRecord = {
-      merchant_id: String(m.id),
+      merchant_id: isManual ? null : String(m.id),
+      merchant_name: isManual ? manualName : m.merchantName,
+      merchant_address: isManual ? manualAddress : m.address,
+      merchant_category: isManual ? manualCategory : m.category,
+      merchant_area: isManual ? manualArea : m.areaName,
+      is_manual_visit: isManual,
       visit_date: form.visitDate,
       officer_name: form.officerName,
       visit_result: form.visitResult,
@@ -619,6 +650,37 @@ function App() {
       next_followup_date: form.nextFollowupDate || null,
       notes: form.notes
     };
+    const dbVisitRecord = {
+      merchant_id: visitRecord.merchant_id,
+      visit_date: visitRecord.visit_date,
+      officer_name: visitRecord.officer_name,
+      visit_result: visitRecord.visit_result,
+      pic_name: visitRecord.pic_name,
+      pic_phone: visitRecord.pic_phone,
+      qr_provider: visitRecord.qr_provider,
+      edc_provider: visitRecord.edc_provider,
+      competitor_bank: visitRecord.competitor_bank,
+      mandiri_opportunity: visitRecord.mandiri_opportunity,
+      next_action: visitRecord.next_action,
+      next_followup_date: visitRecord.next_followup_date,
+      notes: isManual
+        ? `[Manual Visit] Merchant: ${manualName}${manualAddress ? ` | Alamat: ${manualAddress}` : ''}${form.notes ? ` | Catatan: ${form.notes}` : ''}`
+        : visitRecord.notes
+    };
+
+    if (isManual) {
+      if (supabase) {
+        const { error: e1 } = await supabase.from('visits').insert(dbVisitRecord);
+        if (e1) return setMessage(`Gagal simpan visit manual ke Supabase: ${e1.message}`);
+      }
+      setVisits((prev) => [{ ...visitRecord, id: crypto.randomUUID(), created_at: new Date().toISOString() }, ...prev]);
+      setSelected(null);
+      setHasManualSelection(false);
+      setShowVisit(false);
+      setMessage('Visit manual merchant berhasil dicatat.');
+      return;
+    }
+
     const status = form.visitResult === 'Sudah Onboarding' ? 'Sudah Dikunjungi' : form.visitResult === 'Menolak' ? 'Tidak Berminat' : form.nextFollowupDate ? 'Follow-up' : 'Sudah Dikunjungi';
     const pipeline = form.visitResult === 'Sudah Onboarding' ? 'Converted' : form.visitResult === 'Siap Onboarding' ? 'Onboarding' : form.visitResult === 'Tertarik' ? 'Interested' : form.visitResult === 'Menolak' ? 'Rejected' : form.nextFollowupDate ? 'Follow-up' : 'Visited';
     const updatedMerchant = {
@@ -635,7 +697,7 @@ function App() {
     setMerchants((prev) => prev.map((x) => String(x.id) === String(m.id) ? updatedMerchant : x));
     setSelected(updatedMerchant);
     if (supabase) {
-      const { error: e1 } = await supabase.from('visits').insert(visitRecord);
+      const { error: e1 } = await supabase.from('visits').insert(dbVisitRecord);
       const { error: e2 } = await supabase.from('merchants').upsert(merchantToDb(updatedMerchant), { onConflict: 'id' });
       if (e1 || e2) return setMessage(`Gagal simpan ke Supabase: ${(e1 || e2).message}`);
       setVisits((prev) => [{ ...visitRecord, id: crypto.randomUUID(), created_at: new Date().toISOString() }, ...prev]);
@@ -679,7 +741,27 @@ function App() {
   }
 
   function exportVisitReport() {
-    const rows = merchants.map((m) => ({
+    const rows = visits.length ? visits.map((v) => {
+      const m = merchants.find((x) => String(x.id) === String(v.merchant_id));
+      return {
+        merchant_name: m?.merchantName || v.merchant_name || 'Merchant Manual',
+        category: m?.category || v.merchant_category || 'Manual Visit',
+        address: m?.address || v.merchant_address || '',
+        area: m?.areaName || v.merchant_area || '',
+        visit_date: v.visit_date,
+        officer_name: v.officer_name,
+        visit_result: v.visit_result,
+        pic_name: v.pic_name,
+        pic_phone: v.pic_phone,
+        qr_provider: v.qr_provider,
+        edc_provider: v.edc_provider,
+        competitor_bank: v.competitor_bank,
+        mandiri_opportunity: Array.isArray(v.mandiri_opportunity) ? v.mandiri_opportunity.join(', ') : '',
+        next_action: v.next_action,
+        next_followup_date: v.next_followup_date,
+        notes: v.notes
+      };
+    }) : merchants.map((m) => ({
       merchant_name: m.merchantName,
       category: m.category,
       address: m.address,
@@ -695,7 +777,7 @@ function App() {
       competitor_bank: m.competitorBank,
       notes: m.notes
     }));
-    exportExcel(`KGB-RADAR-visit-report-${new Date().toISOString().slice(0, 10)}.xlsx`, rows, 'VISIT_REPORT');
+    exportExcel(`Mercator-visit-report-${new Date().toISOString().slice(0, 10)}.xlsx`, rows, 'VISIT_REPORT');
   }
 
   return (
@@ -707,7 +789,7 @@ function App() {
             <div className="radar-pulse"></div>
           </div>
           <div className="brand-info">
-            <span className="brand-title">KGB-RADAR</span>
+            <span className="brand-title">RADAR KGB</span>
             <span className="brand-subtitle">Command Center</span>
           </div>
         </div>
@@ -736,7 +818,7 @@ function App() {
             <div className="user-avatar">AD</div>
             <div className="user-info">
               <span className="user-name">Admin</span>
-              <span className="user-role">KGB-RADAR Operator</span>
+              <span className="user-role">RADAR KGB Operator</span>
             </div>
           </div>
           <div className="sync-status-widget">
@@ -751,9 +833,7 @@ function App() {
       <main className="workspace">
         <header className="topbar">
           <div>
-            <div className="eyebrow">Branch-ready merchant command center</div>
-            <h1>KGB-RADAR</h1>
-            <p>Kelapa Gading Bolevar · Mapping, visit tracking, QR/EDC competitor capture</p>
+            <h1>Mercator</h1>
           </div>
           <div className="top-actions">
             <div className={`sync-pill ${syncState}`}>
@@ -767,7 +847,7 @@ function App() {
                 <button className="btn blue" onClick={exportVisitReport}><Download size={17} />Export Report</button>
               </>
             )}
-            <button className="btn ghost dashboard-switch-btn" onClick={() => { window.location.href = '/livin.html'; }}><Layers size={17} />Livin’ Treats</button>
+            <button className="btn ghost dashboard-switch-btn" onClick={() => { window.location.href = '/livin.html'; }}><Layers size={17} />Treatrix</button>
           </div>
         </header>
 
@@ -996,6 +1076,7 @@ function App() {
                 <div className="directory-header">
                   <h2>KGB Visit Logs</h2>
                   <div className="directory-filters">
+                    <button className="btn yellow" onClick={openManualVisit}><ClipboardCheck size={16} />Catat Visit Manual</button>
                     <select value={officerFilter} onChange={(e) => setOfficerFilter(e.target.value)}>
                       <option value="all">Semua Petugas (RM/Sales)</option>
                       {uniqueOfficers.map(off => <option key={off} value={off}>{off}</option>)}
@@ -1006,15 +1087,18 @@ function App() {
                 <div className="logs-scrollable">
                   {filteredVisits.map((v) => {
                     const m = merchants.find((x) => String(x.id) === String(v.merchant_id));
+                    const visitMerchantName = m ? m.merchantName : (v.merchant_name || 'Merchant Manual');
+                    const visitMerchantAddress = m ? m.address : (v.merchant_address || 'Di luar titik mapping');
                     return (
                       <div className="log-item-card" key={v.id}>
                         <div className="log-item-header">
                           <div>
-                            <h3>{m ? m.merchantName : `Merchant #${v.merchant_id}`}</h3>
+                            <h3>{visitMerchantName}</h3>
                             <div className="log-item-meta" style={{ marginTop: '4px' }}>
                               <span><CalendarDays size={14} /> {v.visit_date}</span>
                               <span><Users size={14} /> Petugas: <b>{v.officer_name || '-'}</b></span>
                               <span>PIC: <b>{v.pic_name || '-'} ({v.pic_phone || '-'})</b></span>
+                              {!m && <span>Alamat: <b>{visitMerchantAddress}</b></span>}
                             </div>
                           </div>
                           <span className={`badge ${
@@ -1372,7 +1456,12 @@ function ImportModal({ onClose, onRead, summary, onPublish, pendingCount, lvmCou
 
 function VisitModal({ merchant, onClose, onSave }) {
   const today = new Date().toISOString().slice(0, 10);
+  const isManual = Boolean(merchant?.isManualVisit);
   const [form, setForm] = useState({
+    manualMerchantName: merchant.merchantName || '',
+    manualAddress: merchant.address || '',
+    manualCategory: merchant.category || 'Manual Visit',
+    manualAreaName: merchant.areaName || 'Kelapa Gading Bolevar',
     visitDate: today,
     officerName: '',
     visitResult: 'Berhasil ditemui',
@@ -1392,8 +1481,16 @@ function VisitModal({ merchant, onClose, onSave }) {
     <div className="modal-backdrop">
       <div className="modal visit-modal">
         <button className="close" onClick={onClose}><X /></button>
-        <div className="modal-title"><ClipboardCheck /><div><h2>Catat Kunjungan</h2><p>{merchant.merchantName} · Score {Math.round(merchant.priorityScore)}</p></div></div>
+        <div className="modal-title"><ClipboardCheck /><div><h2>Catat Kunjungan</h2><p>{isManual ? 'Merchant manual di luar titik mapping' : `${merchant.merchantName} · Score ${Math.round(merchant.priorityScore)}`}</p></div></div>
         <div className="form-grid">
+          {isManual && (
+            <>
+              <label>Nama merchant<input value={form.manualMerchantName} onChange={(e) => set('manualMerchantName', e.target.value)} placeholder="Nama merchant yang dikunjungi" /></label>
+              <label>Kategori merchant<input value={form.manualCategory} onChange={(e) => set('manualCategory', e.target.value)} placeholder="F&B / Retail / Coffee Shop / dll" /></label>
+              <label>Alamat merchant<input value={form.manualAddress} onChange={(e) => set('manualAddress', e.target.value)} placeholder="Alamat / patokan lokasi" /></label>
+              <label>Area<input value={form.manualAreaName} onChange={(e) => set('manualAreaName', e.target.value)} placeholder="Area merchant" /></label>
+            </>
+          )}
           <label>Tanggal visit<input type="date" value={form.visitDate} onChange={(e) => set('visitDate', e.target.value)} /></label>
           <label>Nama petugas<input value={form.officerName} onChange={(e) => set('officerName', e.target.value)} placeholder="Nama RM/Sales" /></label>
           <label>Status hasil<select value={form.visitResult} onChange={(e) => set('visitResult', e.target.value)}><option>Berhasil ditemui</option><option>Tidak bertemu PIC</option><option>Tertarik</option><option>Butuh follow-up</option><option>Siap Onboarding</option><option>Sudah Onboarding</option><option>Menolak</option></select></label>
